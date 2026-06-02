@@ -4,6 +4,8 @@ package postgres
 import (
 	"context"
 	"database/sql"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func Open(ctx context.Context, url string) (*sql.DB, error) {
