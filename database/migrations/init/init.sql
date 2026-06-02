@@ -1,22 +1,22 @@
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TYPE gender_type AS ENUM ('male', 'female');
 
-CREATE TABLE IF NOT EXISTS users (
-  id SERIAL PRIMARY KEY,
-  username VARCHAR(32) UNIQUE NOT NULL,
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   first_name VARCHAR(50) NOT NULL,
   second_name VARCHAR(50) NOT NULL,
   biography TEXT,
   birthdate DATE,
   city VARCHAR(50),
   gender gender_type,
-  password VARCHAR(255)
+  password_hash VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS auth_tokens (
+CREATE TABLE auth_tokens (
   id BIGSERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token CHAR(32) UNIQUE NOT NULL,
-  expires_at TIMESTAMP NOT NULL,
-  is_revoked BOOLEAN DEFAULT FALSE,
-  ip_address INET
-)
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  is_revoked BOOLEAN NOT NULL DEFAULT FALSE
+);
