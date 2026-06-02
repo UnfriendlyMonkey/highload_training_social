@@ -26,10 +26,12 @@ func main() {
 	defer db.Close()
 
 	userRepo := postgres.NewUserRepo(db)
+	tokenRepo := postgres.NewTokenRepo(db)
 
+	authSvc := service.NewAuthService(userRepo, tokenRepo)
 	userSvc := service.NewUserService(userRepo)
 
-	r := resource.NewRouter(userSvc)
+	r := resource.NewRouter(userSvc, authSvc)
 
 	srv := &http.Server{
 		Addr:    cfg.HTTPAddr,

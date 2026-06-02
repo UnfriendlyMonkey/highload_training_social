@@ -39,7 +39,7 @@ func NewUserRepo(db *sql.DB) *UserRepo {
 
 const insertUser = `
 	INSERT INTO users (first_name, second_name, biography, birthdate, city, gender, password_hash)
-	VALUES ($1, $2, $3, NULLIF($4, '')::date, $5, $6, $7)
+	VALUES ($1, $2, $3, NULLIF($4, '')::date, $5, NULLIF($6, '')::gender_type, $7)
 	RETURNING id`
 
 func (r *UserRepo) Create(ctx context.Context, u CreateUserParams) (uuid.UUID, error) {
@@ -65,7 +65,7 @@ func (r *UserRepo) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error)
 	return &u, nil
 }
 
-const getPasswordHash = `SELECT password_hash FROM users WHERE id = %1`
+const getPasswordHash = `SELECT password_hash FROM users WHERE id = $1`
 
 func (r *UserRepo) GetPasswordHash(ctx context.Context, id uuid.UUID) (string, error) {
 	var hash string

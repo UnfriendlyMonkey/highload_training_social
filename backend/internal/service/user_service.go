@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/UnfriendlyMonkey/hsn/internal/api/http/dto"
@@ -32,6 +33,7 @@ func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) (st
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
+		log.Println("error generating password hash", err)
 		return "", err
 	}
 
@@ -44,6 +46,7 @@ func (s *UserService) Register(ctx context.Context, req dto.RegisterRequest) (st
 		PasswordHash: string(hash),
 	})
 	if err != nil {
+		log.Println("error creating user", err)
 		return "", err
 	}
 	return id.String(), nil
@@ -60,6 +63,7 @@ func (s *UserService) Get(ctx context.Context, idStr string) (*dto.UserResponse,
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
+		return nil, err
 	}
 
 	resp := &dto.UserResponse{
