@@ -66,17 +66,15 @@ func (s *UserService) Get(ctx context.Context, idStr string) (*dto.UserResponse,
 		return nil, err
 	}
 
-	resp := &dto.UserResponse{
-		ID:         user.ID.String(),
-		FirstName:  user.FirstName,
-		SecondName: user.SecondName,
-		Birthdate:  postgres.NullTimeToDateString(user.Birthdate),
-	}
-	if user.Biography.Valid {
-		resp.Biography = user.Biography.String
-	}
-	if user.City.Valid {
-		resp.City = user.City.String
-	}
+	resp := new(dto.UserResponse).FromEntity(user)
 	return resp, nil
+}
+
+func (s *UserService) Search(ctx context.Context, firstName, secondName string) ([]*dto.UserResponse, error) {
+	users, err := s.repo.Search(ctx, firstName, secondName)
+	if err != nil {
+		return nil, err
+	}
+
+	return dto.UserResponsesFromEntities(users), nil
 }

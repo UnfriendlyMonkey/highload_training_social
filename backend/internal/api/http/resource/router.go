@@ -20,6 +20,7 @@ func NewRouter(userSvc *service.UserService, authSvc *service.AuthService) *chi.
 
 	r.Post("/user/register", userHandler.Register)
 	r.Get("/user/get/{id}", userHandler.Get)
+	r.Get("/user/search", userHandler.Search)
 	r.Post("/login", authHandler.Login)
 
 	return r
