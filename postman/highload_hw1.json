@@ -1,0 +1,91 @@
+{
+  "info": {
+    "name": "Highload HW1 - Social Network",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Register user",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.collectionVariables.set('userId', body.user_id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"first_name\": \"Иван\",\n  \"second_name\": \"Иванов\",\n  \"birthdate\": \"1990-01-15\",\n  \"biography\": \"Go, highload\",\n  \"city\": \"Москва\",\n  \"password\": \"secret\"\n}"
+        },
+        "url": "{{baseUrl}}/user/register"
+      }
+    },
+    {
+      "name": "Get user by ID",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/user/get/{{userId}}"
+      }
+    },
+    {
+      "name": "Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.collectionVariables.set('token', body.token);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"{{userId}}\",\n  \"password\": \"secret\"\n}"
+        },
+        "url": "{{baseUrl}}/login"
+      }
+    }
+  ]
+}
