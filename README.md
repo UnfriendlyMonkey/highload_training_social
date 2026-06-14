@@ -47,18 +47,22 @@ curl -s -X POST http://localhost:3000/user/register \
 # анкета
 curl -s http://localhost:3000/user/get/<user_id>
 
+# поиск анкет
+curl -s 'http://localhost:3000/user/search?first_name=Ива&last_name=Ива'
+
 # логин
 curl -s -X POST http://localhost:3000/login \
   -H 'Content-Type: application/json' \
   -d '{"id":"<user_id>","password":"secret"}'
 ```
 
-**Postman:** импортируйте коллекцию [postman/highload_hw1.json](postman/highload_hw1.json). Запустите запросы по порядку: Register → Get user → Login. Переменные `userId` и `token` заполняются автоматически из ответов.
+**Postman:** импортируйте коллекцию [postman/highload_hw.json](postman/highload_hw.json). Запустите запросы по порядку: Register → Get user → Search users → Login. Переменные `userId` и `token` заполняются автоматически из ответов.
 
-## API (ДЗ 1)
+## API
 
 | Метод | Путь | Описание |
 |-------|------|----------|
 | POST | `/user/register` | Регистрация пользователя |
 | GET | `/user/get/{id}` | Получение анкеты |
+| GET | `/user/search` | Поиск анкет по префиксам имени и фамилии (`first_name`, `last_name`) |
 | POST | `/login` | Аутентификация, выдача токена |
