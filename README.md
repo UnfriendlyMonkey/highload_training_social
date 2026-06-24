@@ -24,6 +24,13 @@ make run-db
 
 Подключение к БД вручную (psql): `make connect`
 
+**Миграции:** при первом `make run-db` выполняется `database/migrations/init/init.sql`. Если БД уже создана, новые изменения схемы — в `database/migrations/0002_*.sql`, `0003_*.sql` и т.д.; применить вручную:
+
+```bash
+PGPASSWORD=somepass psql -h localhost -p 5435 -U someuser -d socialnet \
+  -f database/migrations/0002_add_names_prefix_index.sql
+```
+
 ### 2. Backend
 
 ```bash

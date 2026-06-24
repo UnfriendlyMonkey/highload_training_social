@@ -13,6 +13,11 @@ CREATE TABLE users (
   password_hash VARCHAR(255) NOT NULL
 );
 
+CREATE INDEX idx_names_prefix ON users (
+  first_name varchar_pattern_ops,
+  second_name varchar_pattern_ops
+);
+
 CREATE TABLE auth_tokens (
   id BIGSERIAL PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
