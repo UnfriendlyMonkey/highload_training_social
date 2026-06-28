@@ -57,6 +57,29 @@
       }
     },
     {
+      "name": "Search users",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/user/search?first_name=Ива&last_name=Ива",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "search"],
+          "query": [
+            {
+              "key": "first_name",
+              "value": "Ива",
+              "description": "Часть имени для поиска (префикс)"
+            },
+            {
+              "key": "last_name",
+              "value": "Ива",
+              "description": "Часть фамилии для поиска (префикс)"
+            }
+          ]
+        }
+      }
+    },
+    {
       "name": "Login",
       "event": [
         {

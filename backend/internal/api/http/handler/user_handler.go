@@ -41,7 +41,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserHandler) Get(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	user, err := h.svc.Get(r.Context(), id) // TODO: convert here to dto.UserResponse ??
+	user, err := h.svc.Get(r.Context(), id)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrInvalidValue):
@@ -55,4 +55,21 @@ func (h *UserHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, user)
+}
+
+func (h *UserHandler) Search(w http.ResponseWriter, r *http.Request) {
+	firstName := r.URL.Query().Get("first_name")
+	lastName := r.URL.Query().Get("last_name")
+	if firstName == "" || lastName == "" {
+		httputil.WriteJSON(w, http.StatusBadRequest, nil)
+		return
+	}
+
+	users, err := h.svc.Search(r.Context(), firstName, lastName)
+	if err != nil {
+		httputil.WriteJSON(w, http.StatusInternalServerError, nil)
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, users)
 }

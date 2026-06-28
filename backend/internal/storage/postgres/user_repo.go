@@ -79,3 +79,25 @@ func NullTimeToDateString(t sql.NullTime) string {
 	}
 	return t.Time.Format(time.DateOnly)
 }
+
+const searchUsers = `
+SELECT id, first_name, second_name, biography, birthdate, city, gender
+FROM users
+WHERE first_name LIKE $1 AND second_name LIKE $2`
+
+func (r *UserRepo) Search(ctx context.Context, firstName, secondName string) ([]*User, error) {
+	rows, err := r.db.QueryContext(ctx, searchUsers, firstName+"%", secondName+"%")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	users := []*User{}
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&u.ID, &u.FirstName, &u.SecondName, &u.Biography, &u.Birthdate, &u.City, &u.Gender); err != nil {
+			return nil, err
+		}
+		users = append(users, &u)
+	}
+	return users, nil
+}
