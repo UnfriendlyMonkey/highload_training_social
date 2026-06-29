@@ -5,7 +5,7 @@ PGPASSWORD := somepass
 PGDATABASE := socialnet
 PGPORT := 5435
 
-.PHONY: run-db stop-db rm-db connect
+.PHONY: run-db stop-db rm-db connect replication-up replication-down replication-ps replication-status
 
 run-db:
 	docker run --name $(CONTAINER) -d \
@@ -24,3 +24,16 @@ rm-db:
 
 connect:
 	@PGPASSWORD=$(PGPASSWORD) psql -h localhost -p $(PGPORT) -U $(PGUSER) -d $(PGDATABASE)
+
+replication-up:
+	docker compose up -d
+
+replication-down:
+	docker compose down
+
+replication-ps:
+	docker compose ps
+
+replication-status:
+	@PGPASSWORD=$(PGPASSWORD) psql -h localhost -p $(PGPORT) -U $(PGUSER) -d $(PGDATABASE) \
+		-c "SELECT application_name, client_addr, state, sync_state FROM pg_stat_replication;"
