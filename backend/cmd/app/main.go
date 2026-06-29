@@ -19,14 +19,17 @@ func main() {
 	cfg := config.Load()
 
 	ctx := context.Background()
-	db, err := postgres.Open(ctx, cfg.DatabaseURL)
+	cluster, err := postgres.NewCluster(ctx, cfg.DatabaseURLMaster, []string{
+		cfg.DatabaseURLReplica1,
+		cfg.DatabaseURLReplica2,
+	})
 	if err != nil {
 		log.Fatalf("database: %v", err)
 	}
-	defer db.Close()
+	defer cluster.Close()
 
-	userRepo := postgres.NewUserRepo(db)
-	tokenRepo := postgres.NewTokenRepo(db)
+	userRepo := postgres.NewUserRepo(cluster)
+	tokenRepo := postgres.NewTokenRepo(cluster)
 
 	authSvc := service.NewAuthService(userRepo, tokenRepo)
 	userSvc := service.NewUserService(userRepo)
