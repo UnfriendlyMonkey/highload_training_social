@@ -30,11 +30,13 @@ func main() {
 
 	userRepo := postgres.NewUserRepo(cluster)
 	tokenRepo := postgres.NewTokenRepo(cluster)
+	loadTestRepo := postgres.NewLoadTestRepo(cluster)
 
 	authSvc := service.NewAuthService(userRepo, tokenRepo)
 	userSvc := service.NewUserService(userRepo)
+	loadTestSvc := service.NewLoadTestService(loadTestRepo)
 
-	r := resource.NewRouter(userSvc, authSvc)
+	r := resource.NewRouter(userSvc, authSvc, loadTestSvc)
 
 	srv := &http.Server{
 		Addr:    cfg.HTTPAddr,
