@@ -1,25 +1,27 @@
+
 x-postgres-env: &postgres-env
   POSTGRES_USER: someuser
   POSTGRES_PASSWORD: somepass
   POSTGRES_DB: socialnet
   REPLICATION_PASSWORD: replpass
 
+# for switching between synchronous and asynchronous replication: (un)comment synchronous_* settings on postgres-primary.
 x-postgres-primary-command: &postgres-primary-command
   - postgres
   - -c
   - wal_level=replica
   - -c
-  - max_wal_senders=10
+  - max_wal_senders=4
   - -c
-  - max_replication_slots=10
+  - max_replication_slots=4
   - -c
   - hot_standby=on
   - -c
   - listen_addresses=*
-  # -c
-  # - synchronous_commit=on
-  # -c
-  # - synchronous_standby_names=FIRST 1 (postgres-replica-1, postgres-replica-2)
+  - -c
+  - synchronous_commit=on
+  - -c
+  - synchronous_standby_names=FIRST 1 (replica1, replica2)
 
 services:
   postgres-primary:
@@ -46,6 +48,7 @@ services:
     environment:
       <<: *postgres-env
       PRIMARY_HOST: postgres-primary
+      REPLICA_APPLICATION_NAME: replica1
     entrypoint: ["/bin/bash", "/replica-entrypoint.sh"]
     ports:
       - "5436:5432"
@@ -62,6 +65,8 @@ services:
     environment:
       <<: *postgres-env
       PRIMARY_HOST: postgres-primary
+      # PRIMARY_HOST: postgres-replica-1
+      REPLICA_APPLICATION_NAME: replica2
     entrypoint: ["/bin/bash", "/replica-entrypoint.sh"]
     ports:
       - "5437:5432"
