@@ -30,11 +30,11 @@ type CreateUserParams struct {
 }
 
 type UserRepo struct {
-	db *sql.DB
+	cluster *Cluster
 }
 
-func NewUserRepo(db *sql.DB) *UserRepo {
-	return &UserRepo{db: db}
+func NewUserRepo(cluster *Cluster) *UserRepo {
+	return &UserRepo{cluster: cluster}
 }
 
 const insertUser = `
@@ -44,7 +44,7 @@ const insertUser = `
 
 func (r *UserRepo) Create(ctx context.Context, u CreateUserParams) (uuid.UUID, error) {
 	var id uuid.UUID
-	err := r.db.QueryRowContext(ctx, insertUser,
+	err := r.cluster.Master().QueryRowContext(ctx, insertUser,
 		u.FirstName, u.SecondName, u.Biography, u.Birthdate, u.City, u.Gender, u.PasswordHash,
 	).Scan(&id)
 	return id, err
@@ -56,7 +56,7 @@ const getUser = `
 
 func (r *UserRepo) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	var u User
-	err := r.db.QueryRowContext(ctx, getUser, id).Scan(
+	err := r.cluster.Replica().QueryRowContext(ctx, getUser, id).Scan(
 		&u.ID, &u.FirstName, &u.SecondName, &u.Biography, &u.Birthdate, &u.City, &u.Gender,
 	)
 	if err != nil {
@@ -69,7 +69,7 @@ const getPasswordHash = `SELECT password_hash FROM users WHERE id = $1`
 
 func (r *UserRepo) GetPasswordHash(ctx context.Context, id uuid.UUID) (string, error) {
 	var hash string
-	err := r.db.QueryRowContext(ctx, getPasswordHash, id).Scan(&hash)
+	err := r.cluster.Replica().QueryRowContext(ctx, getPasswordHash, id).Scan(&hash)
 	return hash, err
 }
 
@@ -86,7 +86,7 @@ FROM users
 WHERE first_name LIKE $1 AND second_name LIKE $2`
 
 func (r *UserRepo) Search(ctx context.Context, firstName, secondName string) ([]*User, error) {
-	rows, err := r.db.QueryContext(ctx, searchUsers, firstName+"%", secondName+"%")
+	rows, err := r.cluster.Replica().QueryContext(ctx, searchUsers, firstName+"%", secondName+"%")
 	if err != nil {
 		return nil, err
 	}

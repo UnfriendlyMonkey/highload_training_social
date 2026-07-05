@@ -2,18 +2,17 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 type TokenRepo struct {
-	db *sql.DB
+	cluster *Cluster
 }
 
-func NewTokenRepo(db *sql.DB) *TokenRepo {
-	return &TokenRepo{db: db}
+func NewTokenRepo(cluster *Cluster) *TokenRepo {
+	return &TokenRepo{cluster: cluster}
 }
 
 const insertToken = `
@@ -23,6 +22,6 @@ RETURNING token`
 
 func (r *TokenRepo) Create(ctx context.Context, userID uuid.UUID, expiresAt time.Time) (uuid.UUID, error) {
 	var token uuid.UUID
-	err := r.db.QueryRowContext(ctx, insertToken, userID, expiresAt).Scan(&token)
+	err := r.cluster.Master().QueryRowContext(ctx, insertToken, userID, expiresAt).Scan(&token)
 	return token, err
 }
