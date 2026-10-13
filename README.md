@@ -9,7 +9,12 @@
 Требуется Docker. Из каталога `database`:
 
 ```bash
+# для подключения одного инстанса
+
 make run-db
+
+# для запуска кластера
+make replication-up
 ```
 
 Параметры по умолчанию (см. [database/Makefile](database/Makefile)):
