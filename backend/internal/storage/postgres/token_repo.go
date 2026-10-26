@@ -25,3 +25,12 @@ func (r *TokenRepo) Create(ctx context.Context, userID uuid.UUID, expiresAt time
 	err := r.cluster.Master().QueryRowContext(ctx, insertToken, userID, expiresAt).Scan(&token)
 	return token, err
 }
+
+const getUserIDByToken = `SELECT user_id FROM auth_tokens
+	WHERE token = $1 AND NOT is_revoked AND expires_at > now()`
+
+func (r *TokenRepo) LookupUserID(ctx context.Context, token uuid.UUID) (uuid.UUID, error) {
+	var userID uuid.UUID
+	err := r.cluster.Master().QueryRowContext(ctx, getUserIDByToken, token).Scan(&userID)
+	return userID, err
+}
