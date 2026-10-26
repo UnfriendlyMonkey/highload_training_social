@@ -9,6 +9,7 @@ type Config struct {
 	DatabaseURLMaster   string
 	DatabaseURLReplica1 string
 	DatabaseURLReplica2 string
+	RedisURL            string
 }
 
 func Load() Config {
@@ -18,6 +19,7 @@ func Load() Config {
 		DatabaseURLMaster:   envOr("DATABASE_URL_MASTER", "postgres://someuser:somepass@localhost:5435/socialnet?sslmode=disable"),
 		DatabaseURLReplica1: envOr("DATABASE_URL_REPLICA_1", "postgres://someuser:somepass@localhost:5436/socialnet?sslmode=disable"),
 		DatabaseURLReplica2: envOr("DATABASE_URL_REPLICA_2", "postgres://someuser:somepass@localhost:5437/socialnet?sslmode=disable"),
+		RedisURL:            envOr("REDIS_URL", "redis://localhost:6379/0"),
 	}
 }
 

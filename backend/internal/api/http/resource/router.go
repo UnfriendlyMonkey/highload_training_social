@@ -33,6 +33,7 @@ func NewRouter(userSvc *service.UserService, authSvc *service.AuthService, loadT
 		r.Post("/post/create", socialHandler.CreatePost)
 		r.Put("/post/update", socialHandler.UpdatePost)
 		r.Put("/post/delete/{id}", socialHandler.DeletePost)
+		r.Get("/post/feed", socialHandler.GetFeed)
 	})
 	r.Post("/load-test/event", loadTestHandler.RecordEvent)
 	r.Get("/load-test/count", loadTestHandler.Count)

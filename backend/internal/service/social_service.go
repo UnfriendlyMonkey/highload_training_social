@@ -11,9 +11,18 @@ import (
 	"github.com/google/uuid"
 )
 
-type SocialService struct{ repo *postgres.SocialRepo }
+type SocialService struct {
+	repo  *postgres.SocialRepo
+	feeds *FeedService
+}
 
-func NewSocialService(repo *postgres.SocialRepo) *SocialService { return &SocialService{repo: repo} }
+func NewSocialService(repo *postgres.SocialRepo, feeds ...*FeedService) *SocialService {
+	service := &SocialService{repo: repo}
+	if len(feeds) > 0 {
+		service.feeds = feeds[0]
+	}
+	return service
+}
 
 func parseID(value string) (uuid.UUID, error) {
 	id, err := uuid.Parse(value)
@@ -80,4 +89,15 @@ func (s *SocialService) GetPost(ctx context.Context, id string) (*dto.PostRespon
 		return nil, socialError(err)
 	}
 	return new(dto.PostResponse).FromEntity(post), nil
+}
+
+func (s *SocialService) GetFeed(ctx context.Context, user uuid.UUID, offset, limit int) ([]dto.PostResponse, error) {
+	if s.feeds == nil {
+		return nil, errors.New("feed service is not configured")
+	}
+	offset, limit, err := ValidateFeedPage(offset, limit)
+	if err != nil {
+		return nil, err
+	}
+	return s.feeds.Get(ctx, user, offset, limit)
 }

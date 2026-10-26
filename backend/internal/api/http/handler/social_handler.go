@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/UnfriendlyMonkey/hsn/internal/api/http/dto"
 	"github.com/UnfriendlyMonkey/hsn/internal/api/http/httputil"
@@ -103,4 +104,34 @@ func (h *SocialHandler) GetPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httputil.WriteJSON(w, http.StatusOK, post)
+}
+
+func (h *SocialHandler) GetFeed(w http.ResponseWriter, r *http.Request) {
+	user, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		httputil.WriteJSON(w, http.StatusUnauthorized, nil)
+		return
+	}
+	offset, limit := 0, 10
+	var err error
+	if raw := r.URL.Query().Get("offset"); raw != "" {
+		offset, err = strconv.Atoi(raw)
+		if err != nil {
+			socialError(w, service.ErrInvalidValue)
+			return
+		}
+	}
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		limit, err = strconv.Atoi(raw)
+		if err != nil {
+			socialError(w, service.ErrInvalidValue)
+			return
+		}
+	}
+	posts, err := h.svc.GetFeed(r.Context(), user, offset, limit)
+	if err != nil {
+		socialError(w, err)
+		return
+	}
+	httputil.WriteJSON(w, http.StatusOK, posts)
 }

@@ -13,8 +13,9 @@ HTTP_ADDR := :3000
 DATABASE_URL_MASTER := postgres://$(PGUSER):$(PGPASSWORD)@localhost:$(PGPORT_PRIMARY)/$(PGDATABASE)?sslmode=disable
 DATABASE_URL_REPLICA_1 := postgres://$(PGUSER):$(PGPASSWORD)@localhost:$(PGPORT_REPLICA1)/$(PGDATABASE)?sslmode=disable
 DATABASE_URL_REPLICA_2 := postgres://$(PGUSER):$(PGPASSWORD)@localhost:$(PGPORT_REPLICA2)/$(PGDATABASE)?sslmode=disable
+REDIS_URL := redis://localhost:6379/0
 
-export HTTP_ADDR DATABASE_URL_MASTER DATABASE_URL_REPLICA_1 DATABASE_URL_REPLICA_2
+export HTTP_ADDR DATABASE_URL_MASTER DATABASE_URL_REPLICA_1 DATABASE_URL_REPLICA_2 REDIS_URL
 
 .PHONY: help up down db-up db-down wait-db migrate app status check
 

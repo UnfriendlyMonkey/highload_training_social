@@ -100,7 +100,7 @@ func TestSocialEndpointsPostgres(t *testing.T) {
 	revision := func(user uuid.UUID, want int) {
 		t.Helper()
 		var got int
-		err := db.QueryRowContext(ctx, `SELECT revision FROM feed_revisions WHERE user_id=$1`, user).Scan(&got)
+		err := db.QueryRowContext(ctx, `SELECT revision FROM feed_rebuild_queue WHERE user_id=$1`, user).Scan(&got)
 		if errorsIsNoRows(err) && want == 0 {
 			return
 		}
@@ -135,16 +135,16 @@ func TestSocialEndpointsPostgres(t *testing.T) {
 	request("PUT", "/post/update", aliceToken.String(), fmt.Sprintf(`{"id":%q,"text":"wrong"}`, postID), 404)
 	request("PUT", "/post/delete/"+postID, aliceToken.String(), "", 404)
 	revision(alice, 2)
-	// An invalidation failure must roll back the post mutation as well.
-	if _, err := db.ExecContext(ctx, `UPDATE feed_revisions SET revision = 9223372036854775807 WHERE user_id = $1`, alice); err != nil {
+	// A durable-invalidation enqueue failure must roll back the post mutation too.
+	if _, err := db.ExecContext(ctx, `UPDATE feed_rebuild_queue SET revision = 9223372036854775807 WHERE user_id = $1`, alice); err != nil {
 		t.Fatal(err)
 	}
 	request("PUT", "/post/update", bobToken.String(), fmt.Sprintf(`{"id":%q,"text":"rolled back"}`, postID), 500)
 	var storedText string
 	if err := db.QueryRowContext(ctx, `SELECT text FROM posts WHERE id = $1`, postID).Scan(&storedText); err != nil || storedText != "hello" {
-		t.Fatalf("post after failed revision update: %q, %v", storedText, err)
+		t.Fatalf("post after failed queue update: %q, %v", storedText, err)
 	}
-	if _, err := db.ExecContext(ctx, `UPDATE feed_revisions SET revision = 2 WHERE user_id = $1`, alice); err != nil {
+	if _, err := db.ExecContext(ctx, `UPDATE feed_rebuild_queue SET revision = 2 WHERE user_id = $1`, alice); err != nil {
 		t.Fatal(err)
 	}
 	request("PUT", "/post/update", bobToken.String(), fmt.Sprintf(`{"id":%q,"text":"updated"}`, postID), 200)
