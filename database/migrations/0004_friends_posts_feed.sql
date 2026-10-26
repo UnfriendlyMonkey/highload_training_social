@@ -16,7 +16,11 @@ CREATE TABLE IF NOT EXISTS posts (
 
 CREATE INDEX IF NOT EXISTS idx_posts_author_created ON posts (author_id, created_at DESC, id DESC);
 
-CREATE TABLE IF NOT EXISTS feed_revisions (
+CREATE TABLE IF NOT EXISTS feed_rebuild_queue (
   user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  revision BIGINT NOT NULL DEFAULT 0 CHECK (revision >= 0)
+  revision BIGINT NOT NULL DEFAULT 1 CHECK (revision > 0),
+  enqueued_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS idx_feed_rebuild_queue_enqueued_at
+  ON feed_rebuild_queue (enqueued_at);
