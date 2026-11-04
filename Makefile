@@ -13,8 +13,9 @@ HTTP_ADDR := :3000
 DATABASE_URL_MASTER := postgres://$(PGUSER):$(PGPASSWORD)@localhost:$(PGPORT_PRIMARY)/$(PGDATABASE)?sslmode=disable
 DATABASE_URL_REPLICA_1 := postgres://$(PGUSER):$(PGPASSWORD)@localhost:$(PGPORT_REPLICA1)/$(PGDATABASE)?sslmode=disable
 DATABASE_URL_REPLICA_2 := postgres://$(PGUSER):$(PGPASSWORD)@localhost:$(PGPORT_REPLICA2)/$(PGDATABASE)?sslmode=disable
+REDIS_URL := redis://localhost:6379/0
 
-export HTTP_ADDR DATABASE_URL_MASTER DATABASE_URL_REPLICA_1 DATABASE_URL_REPLICA_2
+export HTTP_ADDR DATABASE_URL_MASTER DATABASE_URL_REPLICA_1 DATABASE_URL_REPLICA_2 REDIS_URL
 
 .PHONY: help up down db-up db-down wait-db migrate app status check
 
@@ -22,6 +23,7 @@ help:
 	@echo "Targets:"
 	@echo "  make up      - start replicated DB, apply migrations, run app"
 	@echo "  make db-up   - start replicated DB only"
+	@echo "  make migrate - apply numbered SQL migrations to the primary"
 	@echo "  make app     - run backend (expects DB on 5435/5436/5437)"
 	@echo "  make down    - stop replicated DB"
 	@echo "  make status  - show pg_stat_replication"
@@ -49,8 +51,12 @@ wait-db:
 	[ $$ready -eq 1 ] || (echo "replicas not streaming"; exit 1)
 
 migrate:
-	@PGPASSWORD=$(PGPASSWORD) psql -h localhost -p $(PGPORT_PRIMARY) -U $(PGUSER) -d $(PGDATABASE) \
-		-f $(DB_DIR)/migrations/0003_load_test_events.sql
+	@for migration in $(DB_DIR)/migrations/[0-9]*.sql; do \
+		echo "Applying $$migration"; \
+		PGPASSWORD=$(PGPASSWORD) psql -X -v ON_ERROR_STOP=1 --single-transaction \
+			-h localhost -p $(PGPORT_PRIMARY) -U $(PGUSER) -d $(PGDATABASE) \
+			-f "$$migration" || exit 1; \
+	done
 
 app:
 	cd $(BACKEND_DIR) && go run ./cmd/app

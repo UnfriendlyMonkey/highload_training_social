@@ -24,6 +24,21 @@ x-postgres-primary-command: &postgres-primary-command
   - synchronous_standby_names=FIRST 1 (replica1, replica2)
 
 services:
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: socialnet-redis
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   postgres-primary:
     image: postgres:18
     container_name: socialnet-primary
@@ -81,3 +96,4 @@ volumes:
   postgres_primary_data:
   postgres_replica_1_data:
   postgres_replica_2_data:
+  redis_data:
