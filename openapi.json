@@ -583,6 +583,27 @@
             },
             "required": true,
             "in": "path"
+          },
+          {
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "required": false,
+            "in": "query",
+            "description": "Максимальное число сообщений на странице"
+          },
+          {
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "in": "query",
+            "description": "Непрозрачный курсор из next_cursor предыдущей страницы"
           }
         ],
         "responses": {
@@ -591,10 +612,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/DialogMessage"
-                  }
+                  "$ref": "#/components/schemas/DialogPage"
                 }
               }
             }
@@ -729,6 +747,22 @@
           },
           "text": {
             "$ref": "#/components/schemas/DialogMessageText"
+          }
+        }
+      },
+      "DialogPage": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DialogMessage"
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "description": "Курсор следующей страницы; отсутствует на последней странице"
           }
         }
       },
