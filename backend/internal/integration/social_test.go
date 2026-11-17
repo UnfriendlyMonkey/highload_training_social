@@ -61,6 +61,17 @@ func TestSocialEndpointsPostgres(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	if _, err := db.ExecContext(ctx, `CREATE TABLE dialog_messages (
+		dialog_id UUID NOT NULL,
+		id UUID NOT NULL,
+		sender_id UUID NOT NULL,
+		recipient_id UUID NOT NULL,
+		text TEXT NOT NULL,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+		PRIMARY KEY (dialog_id, id)
+	)`); err != nil {
+		t.Fatal(err)
+	}
 	alice, bob := uuid.New(), uuid.New()
 	aliceToken, bobToken := uuid.New(), uuid.New()
 	_, err = db.ExecContext(ctx, `INSERT INTO users (id, first_name, second_name, password_hash) VALUES ($1,'A','A','x'),($2,'B','B','x')`, alice, bob)
@@ -78,7 +89,8 @@ func TestSocialEndpointsPostgres(t *testing.T) {
 	defer cluster.Close()
 	users := postgres.NewUserRepo(cluster)
 	tokens := postgres.NewTokenRepo(cluster)
-	router := resource.NewRouter(service.NewUserService(users), service.NewAuthService(users, tokens), service.NewLoadTestService(postgres.NewLoadTestRepo(cluster)), service.NewSocialService(postgres.NewSocialRepo(cluster)), tokens)
+	social := service.NewSocialService(postgres.NewSocialRepo(cluster)).WithDialogs(service.NewDialogService(postgres.NewDialogRepo(cluster)))
+	router := resource.NewRouter(service.NewUserService(users), service.NewAuthService(users, tokens), service.NewLoadTestService(postgres.NewLoadTestRepo(cluster)), social, tokens)
 	request := func(method, path, token, body string, want int) string {
 		t.Helper()
 		req := httptest.NewRequest(method, path, strings.NewReader(body))
@@ -157,6 +169,41 @@ func TestSocialEndpointsPostgres(t *testing.T) {
 	revision(alice, 5)
 	request("POST", "/post/create", bobToken.String(), `{"text":"after removal"}`, 200)
 	revision(alice, 5)
+
+	request("POST", "/dialog/"+bob.String()+"/send", "", `{"text":"unauthorized"}`, 401)
+	request("POST", "/dialog/"+bob.String()+"/send", aliceToken.String(), `{}`, 400)
+	request("POST", "/dialog/"+uuid.NewString()+"/send", aliceToken.String(), `{"text":"missing"}`, 404)
+	request("POST", "/dialog/"+alice.String()+"/send", bobToken.String(), `{"text":"first"}`, 200)
+	request("POST", "/dialog/"+alice.String()+"/send", bobToken.String(), `{"text":"second"}`, 200)
+	request("POST", "/dialog/"+alice.String()+"/send", bobToken.String(), `{"text":"third"}`, 200)
+	request("GET", "/dialog/"+bob.String()+"/list?limit=0", aliceToken.String(), "", 400)
+	request("GET", "/dialog/"+bob.String()+"/list?cursor=invalid", aliceToken.String(), "", 400)
+	firstPage := request("GET", "/dialog/"+bob.String()+"/list?limit=2", aliceToken.String(), "", 200)
+	var first struct {
+		Items []struct {
+			Text string `json:"text"`
+		} `json:"items"`
+		NextCursor string `json:"next_cursor"`
+	}
+	if err := json.Unmarshal([]byte(firstPage), &first); err != nil {
+		t.Fatal(err)
+	}
+	if len(first.Items) != 2 || first.Items[0].Text != "first" || first.Items[1].Text != "second" || first.NextCursor == "" {
+		t.Fatalf("unexpected first dialog page: %s", firstPage)
+	}
+	secondPage := request("GET", "/dialog/"+bob.String()+"/list?limit=2&cursor="+url.QueryEscape(first.NextCursor), aliceToken.String(), "", 200)
+	var second struct {
+		Items []struct {
+			Text string `json:"text"`
+		} `json:"items"`
+		NextCursor *string `json:"next_cursor"`
+	}
+	if err := json.Unmarshal([]byte(secondPage), &second); err != nil {
+		t.Fatal(err)
+	}
+	if len(second.Items) != 1 || second.Items[0].Text != "third" || second.NextCursor != nil {
+		t.Fatalf("unexpected second dialog page: %s", secondPage)
+	}
 }
 
 func errorsIsNoRows(err error) bool { return err == sql.ErrNoRows }
