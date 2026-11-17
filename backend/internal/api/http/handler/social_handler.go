@@ -135,3 +135,44 @@ func (h *SocialHandler) GetFeed(w http.ResponseWriter, r *http.Request) {
 	}
 	httputil.WriteJSON(w, http.StatusOK, posts)
 }
+
+func (h *SocialHandler) SendDialogMessage(w http.ResponseWriter, r *http.Request) {
+	user, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		httputil.WriteJSON(w, http.StatusUnauthorized, nil)
+		return
+	}
+	var req dto.SendDialogMessageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		socialError(w, service.ErrInvalidValue)
+		return
+	}
+	if err := h.svc.SendDialogMessage(r.Context(), user, chi.URLParam(r, "user_id"), req); err != nil {
+		socialError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *SocialHandler) ListDialogMessages(w http.ResponseWriter, r *http.Request) {
+	user, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		httputil.WriteJSON(w, http.StatusUnauthorized, nil)
+		return
+	}
+	limit := service.DefaultDialogPageLimit
+	var err error
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		limit, err = strconv.Atoi(raw)
+		if err != nil {
+			socialError(w, service.ErrInvalidValue)
+			return
+		}
+	}
+	page, err := h.svc.ListDialogMessages(r.Context(), user, chi.URLParam(r, "user_id"), r.URL.Query().Get("cursor"), limit)
+	if err != nil {
+		socialError(w, err)
+		return
+	}
+	httputil.WriteJSON(w, http.StatusOK, page)
+}

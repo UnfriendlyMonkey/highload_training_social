@@ -12,8 +12,9 @@ import (
 )
 
 type SocialService struct {
-	repo  *postgres.SocialRepo
-	feeds *FeedService
+	repo    *postgres.SocialRepo
+	feeds   *FeedService
+	dialogs *DialogService
 }
 
 func NewSocialService(repo *postgres.SocialRepo, feeds ...*FeedService) *SocialService {
@@ -22,6 +23,25 @@ func NewSocialService(repo *postgres.SocialRepo, feeds ...*FeedService) *SocialS
 		service.feeds = feeds[0]
 	}
 	return service
+}
+
+func (s *SocialService) WithDialogs(dialogs *DialogService) *SocialService {
+	s.dialogs = dialogs
+	return s
+}
+
+func (s *SocialService) SendDialogMessage(ctx context.Context, sender uuid.UUID, recipient string, req dto.SendDialogMessageRequest) error {
+	if s.dialogs == nil {
+		return errors.New("dialog service is not configured")
+	}
+	return s.dialogs.Send(ctx, sender, recipient, req)
+}
+
+func (s *SocialService) ListDialogMessages(ctx context.Context, user uuid.UUID, other, cursor string, limit int) (dto.DialogPageResponse, error) {
+	if s.dialogs == nil {
+		return dto.DialogPageResponse{}, errors.New("dialog service is not configured")
+	}
+	return s.dialogs.List(ctx, user, other, cursor, limit)
 }
 
 func parseID(value string) (uuid.UUID, error) {

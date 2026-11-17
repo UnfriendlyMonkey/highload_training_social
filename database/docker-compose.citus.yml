@@ -1,0 +1,71 @@
+x-postgres-env: &postgres-env
+  POSTGRES_USER: someuser
+  POSTGRES_PASSWORD: somepass
+  POSTGRES_DB: socialnet
+
+x-citus: &citus
+  image: citusdata/citus:14.2.0
+  environment: *postgres-env
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U someuser -d socialnet"]
+    interval: 5s
+    timeout: 5s
+    retries: 12
+
+services:
+  redis:
+    image: redis:7.4-alpine
+    container_name: socialnet-citus-redis
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - citus_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  citus-coordinator:
+    <<: *citus
+    container_name: socialnet-citus-coordinator
+    ports:
+      - "5435:5432"
+    volumes:
+      - citus_coordinator_data:/var/lib/postgresql
+      - ./migrations/init/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+
+  citus-worker-1:
+    <<: *citus
+    container_name: socialnet-citus-worker-1
+    volumes:
+      - citus_worker_1_data:/var/lib/postgresql
+
+  citus-worker-2:
+    <<: *citus
+    container_name: socialnet-citus-worker-2
+    volumes:
+      - citus_worker_2_data:/var/lib/postgresql
+
+  citus-bootstrap:
+    image: citusdata/citus:14.2.0
+    environment:
+      PGPASSWORD: somepass
+    volumes:
+      - ./citus-bootstrap.sql:/citus-bootstrap.sql:ro
+    depends_on:
+      citus-coordinator:
+        condition: service_healthy
+      citus-worker-1:
+        condition: service_healthy
+      citus-worker-2:
+        condition: service_healthy
+    command: ["psql", "-h", "citus-coordinator", "-U", "someuser", "-d", "socialnet", "-v", "ON_ERROR_STOP=1", "-f", "/citus-bootstrap.sql"]
+    restart: "no"
+
+volumes:
+  citus_coordinator_data:
+  citus_worker_1_data:
+  citus_worker_2_data:
+  citus_redis_data:

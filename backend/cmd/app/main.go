@@ -33,6 +33,7 @@ func main() {
 	tokenRepo := postgres.NewTokenRepo(cluster)
 	loadTestRepo := postgres.NewLoadTestRepo(cluster)
 	socialRepo := postgres.NewSocialRepo(cluster)
+	dialogRepo := postgres.NewDialogRepo(cluster)
 	feedCache, err := cache.NewFeedCache(cfg.RedisURL)
 	if err != nil {
 		log.Fatalf("redis configuration: %v", err)
@@ -46,7 +47,7 @@ func main() {
 	userSvc := service.NewUserService(userRepo)
 	loadTestSvc := service.NewLoadTestService(loadTestRepo)
 	feedSvc := service.NewFeedService(socialRepo, feedCache)
-	socialSvc := service.NewSocialService(socialRepo, feedSvc)
+	socialSvc := service.NewSocialService(socialRepo, feedSvc).WithDialogs(service.NewDialogService(dialogRepo))
 
 	r := resource.NewRouter(userSvc, authSvc, loadTestSvc, socialSvc, tokenRepo)
 
