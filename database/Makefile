@@ -5,7 +5,7 @@ PGPASSWORD := somepass
 PGDATABASE := socialnet
 PGPORT := 5435
 
-.PHONY: run-db stop-db rm-db connect replication-up replication-down replication-ps replication-status
+.PHONY: run-db stop-db rm-db connect replication-up replication-down replication-ps replication-status citus-up citus-down citus-ps
 
 run-db:
 	docker run --name $(CONTAINER) -d \
@@ -37,3 +37,12 @@ replication-ps:
 replication-status:
 	@PGPASSWORD=$(PGPASSWORD) psql -h localhost -p $(PGPORT) -U $(PGUSER) -d $(PGDATABASE) \
 		-c "SELECT application_name, client_addr, state, sync_state FROM pg_stat_replication;"
+
+citus-up:
+	docker compose -f docker-compose.citus.yml up -d
+
+citus-down:
+	docker compose -f docker-compose.citus.yml down
+
+citus-ps:
+	docker compose -f docker-compose.citus.yml ps
