@@ -1,6 +1,7 @@
 ROOT_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 DB_DIR := $(ROOT_DIR)/database
 BACKEND_DIR := $(ROOT_DIR)/backend
+RABBITMQ_COMPOSE := $(ROOT_DIR)/infrastructure/docker-compose.rabbitmq.yml
 
 PGUSER := someuser
 PGPASSWORD := somepass
@@ -12,22 +13,28 @@ DATABASE_URL_MASTER := postgres://$(PGUSER):$(PGPASSWORD)@localhost:$(PGPORT_PRI
 DATABASE_URL_REPLICA_1 := $(DATABASE_URL_MASTER)
 DATABASE_URL_REPLICA_2 := $(DATABASE_URL_MASTER)
 REDIS_URL := redis://localhost:6379/0
+AMQP_URL ?= amqp://guest:guest@localhost:5672/
 
-export HTTP_ADDR DATABASE_URL_MASTER DATABASE_URL_REPLICA_1 DATABASE_URL_REPLICA_2 REDIS_URL
+export HTTP_ADDR DATABASE_URL_MASTER DATABASE_URL_REPLICA_1 DATABASE_URL_REPLICA_2 REDIS_URL AMQP_URL
 
-.PHONY: help up down db-up db-down wait-db migrate app status check citus-up citus-down citus-db-up citus-wait citus-status
+.PHONY: help up down db-up db-down wait-db migrate app status check citus-up citus-down citus-db-up citus-wait citus-status rabbitmq-up rabbitmq-wait rabbitmq-down
 
 help:
 	@echo "Targets:"
-	@echo "  make up      - start Citus, apply migrations, run app"
+	@echo "  make up      - start Citus and RabbitMQ, apply migrations, run app"
 	@echo "  make db-up   - start the Citus cluster"
 	@echo "  make migrate - apply numbered SQL migrations to the coordinator"
 	@echo "  make app     - run backend against the Citus coordinator"
-	@echo "  make down    - stop the Citus cluster"
+	@echo "  make down    - stop Citus and RabbitMQ"
+	@echo "  make rabbitmq-up/down - start or stop RabbitMQ independently"
 	@echo "  make status  - show active Citus workers"
 	@echo "  make check   - Citus status + sample API call"
 
-up: citus-up
+up:
+	$(MAKE) citus-up
+	$(MAKE) rabbitmq-up
+	$(MAKE) rabbitmq-wait
+	$(MAKE) app
 
 db-up: citus-db-up
 
@@ -44,7 +51,7 @@ migrate:
 app:
 	cd $(BACKEND_DIR) && DATABASE_URL_MASTER=$(DATABASE_URL_MASTER) DATABASE_URL_REPLICA_1=$(DATABASE_URL_MASTER) DATABASE_URL_REPLICA_2=$(DATABASE_URL_MASTER) go run ./cmd/app
 
-down: citus-down
+down: citus-down rabbitmq-down
 
 status: citus-status
 
@@ -53,7 +60,10 @@ check: status
 		&& echo "API: ok (http://localhost:3000)" \
 		|| echo "API: not running — use 'make app' or 'make up'"
 
-citus-up: citus-db-up citus-wait migrate app
+citus-up:
+	$(MAKE) citus-db-up
+	$(MAKE) citus-wait
+	$(MAKE) migrate
 
 citus-db-up:
 	@docker rm -f socialnet 2>/dev/null || true
@@ -70,6 +80,15 @@ citus-wait:
 
 citus-down:
 	$(MAKE) -C $(DB_DIR) citus-down
+
+rabbitmq-up:
+	docker compose -f $(RABBITMQ_COMPOSE) up -d
+
+rabbitmq-wait:
+	docker compose -f $(RABBITMQ_COMPOSE) up -d --wait
+
+rabbitmq-down:
+	docker compose -f $(RABBITMQ_COMPOSE) down
 
 citus-status:
 	@PGPASSWORD=$(PGPASSWORD) psql -h localhost -p $(PGPORT_PRIMARY) -U $(PGUSER) -d $(PGDATABASE) \

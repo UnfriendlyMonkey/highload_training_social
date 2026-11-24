@@ -5,7 +5,7 @@
 
 ## Локальный запуск
 
-### 1. Citus и Redis
+### 1. Citus, Redis и RabbitMQ
 
 Требуется Docker. Основной запуск из корня репозитория:
 
@@ -13,11 +13,19 @@
 make up
 ```
 
-Команда поднимает Citus coordinator на `localhost:5435`, два worker-узла и Redis,
+Команда поднимает Citus coordinator на `localhost:5435`, два worker-узла, Redis и RabbitMQ,
 дожидается регистрации worker-узлов, применяет миграции и запускает HTTP-сервер.
 Используется закреплённый образ `citusdata/citus:14.2.0`, проверенный на
 PostgreSQL 18.4. Остановить кластер: `make down`; проверить worker-узлы:
 `make status`.
+
+RabbitMQ доступен на `localhost:5672`, интерфейс управления — на
+`http://localhost:15672` (локальный пользователь `guest` / `guest`). Адрес
+подключения приложения задаётся через `AMQP_URL`; при старте приложение
+проверяет подключение и создаёт общую топологию очередей. RabbitMQ запускается
+отдельной конфигурацией [Compose](infrastructure/docker-compose.rabbitmq.yml):
+`make rabbitmq-up`, `make rabbitmq-wait` и `make rabbitmq-down` управляют им
+независимо от Citus. Пока публикация и обработка событий не реализованы.
 
 Параметры по умолчанию (см. [database/Makefile](database/Makefile)):
 

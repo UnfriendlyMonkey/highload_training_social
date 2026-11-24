@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/UnfriendlyMonkey/hsn/internal/api/http/resource"
+	"github.com/UnfriendlyMonkey/hsn/internal/broker"
 	"github.com/UnfriendlyMonkey/hsn/internal/cache"
 	"github.com/UnfriendlyMonkey/hsn/internal/config"
 	"github.com/UnfriendlyMonkey/hsn/internal/service"
@@ -18,6 +19,10 @@ import (
 
 func main() {
 	cfg := config.Load()
+
+	if err := broker.Initialize(cfg.AMQPURL); err != nil {
+		log.Fatalf("rabbitmq: %v", err)
+	}
 
 	ctx := context.Background()
 	cluster, err := postgres.NewCluster(ctx, cfg.DatabaseURLMaster, []string{

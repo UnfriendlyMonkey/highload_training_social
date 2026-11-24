@@ -10,6 +10,7 @@ type Config struct {
 	DatabaseURLReplica1 string
 	DatabaseURLReplica2 string
 	RedisURL            string
+	AMQPURL             string
 }
 
 func Load() Config {
@@ -20,6 +21,7 @@ func Load() Config {
 		DatabaseURLReplica1: envOr("DATABASE_URL_REPLICA_1", "postgres://someuser:somepass@localhost:5436/socialnet?sslmode=disable"),
 		DatabaseURLReplica2: envOr("DATABASE_URL_REPLICA_2", "postgres://someuser:somepass@localhost:5437/socialnet?sslmode=disable"),
 		RedisURL:            envOr("REDIS_URL", "redis://localhost:6379/0"),
+		AMQPURL:             envOr("AMQP_URL", "amqp://guest:guest@localhost:5672/"),
 	}
 }
 
